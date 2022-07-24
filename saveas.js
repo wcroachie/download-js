@@ -1318,7 +1318,7 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
     var hasFileExt = fileName.match(/\.(.*?)/g);
     if(!hasFileExt){
       // automatically detect file extension based on mimetype
-      var gottenFileExtension = mimeTypeToFileExtension(blob.type);
+      var gottenFileExtension = mimeTypeToFileExtension(blobOrFile.type);
       fileName+="."+gottenFileExtension;
     }
     blobOrFile.name = fileName;
