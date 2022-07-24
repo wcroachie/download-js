@@ -12,9 +12,7 @@
   window.__saveAs(fileOrBlob,fileName);
 
   alternatively:
-  window.__save(fileOrBlob)
-
-  needs: mimeTypeToFileExtension
+  window.__save(fileOrBlob);
 
 */
 
