@@ -1,37 +1,36 @@
 /*
 
 
- how to use:
- 
- invoke the utility like so:
- 
- window["local/path/to/saveas.js"]();
- 
- 
- second arg is optional, otherwise will either use filename if input is file, or generate untitled+timestamp if input is blob
- __saveAs(fileOrBlob,fileName);
- 
- alternatively:
- __save(fileOrBlob
+  how to use:
 
- needs: mimeTypeToFileExtension
+  invoke the utility like so:
+
+  window["local/path/to/saveas.js"]();
+
+
+  second arg is optional, otherwise will either use filename if input is file, or generate untitled+timestamp if input is blob
+  window.__saveAs(fileOrBlob,fileName);
+
+  alternatively:
+  window.__save(fileOrBlob)
+
+  needs: mimeTypeToFileExtension
 
 */
 
-
-self[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>{
+window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>{
 
   
-  var getDate=function(){
+  function getDate(){
     var date  = new Date();
     return {
       month : (date.getMonth()+1).toString().padStart(2,0)  ,
       day   : date.getDate().toString().padStart(2,0)       ,
       year  : date.getFullYear().toString().padStart(4,0)   ,
     };
-  };
-  
-  var getTime=function(){
+  }
+
+  function getTime(){
     var date  = new Date();
     return {
       hours         : date.getHours().toString().padStart(2,0)        ,
@@ -39,31 +38,31 @@ self[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>{
       seconds       : date.getSeconds().toString().padStart(2,0)      ,
       milliseconds  : date.getMilliseconds().toString().padStart(3,0) ,
     };
-  };
-  
-  var getTimeStamp=function(){
-    var date=__getDate();
-    var time=__getTime();
-    return date.month+date.day+date.year+"-"+time.hours+time.minutes+"-"+time.seconds+time.milliseconds;
-  };
-  
-  
+  }
 
-  var isIOS=function(){
-    if (/iPad|iPhone|iPod/.test(navigator.platform)){
+  function getTimeStamp(){
+    var date=getDate();
+    var time=getTime();
+    return date.month+date.day+date.year+"-"+time.hours+time.minutes+"-"+time.seconds+time.milliseconds;
+  }
+  
+ 
+  // check if we are using IOS or iPadOS
+  function isIOS(){
+    if(/iPad|iPhone|iPod/.test(navigator.platform)){
       return true;
     }else{
       return navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform);
     }
-  };
-  
-  var isIPadOS=function(){
+  }
+
+  function isIPadOS(){
     return navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform);
-  };
+  }
 
 
 
-  var blobToFile=function(blob,fileName){
+  function blobToFile(blob,fileName){
     // convert a blob to a file object
     // if no second argument, will generate file name based on date
     if(!fileName){
@@ -71,6 +70,7 @@ self[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>{
     }
     var hasFileExt = fileName.match(/\.(.*?)/g);
     if(!hasFileExt){
+      // automatically detect file extension based on mimetype
       var gottenFileExtension = mimeTypeToFileExtension(blob.type);
       fileName+="."+gottenFileExtension;
     }
@@ -79,49 +79,53 @@ self[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>{
     return new File([blob], blob.name, {
       type: blob.type,
     });
-  };
-  
-  
-  
-  
-  
-  var mobileShare=function(fileOrBlob){
+  }
+
+
+
+
+
+  function mobileShare(file){
     // uses share sheet on mobile devices
-    // 1st arg - required - must be file object
-    var file=fileOrBlob;
-    if(!fileOrBlob.name){
-      file=blobToFile(fileOrBlob);
+    // 1st arg - required - must be file object with name
+    if(!file.name){
+      console.error("mobileShare() can only take a named file as an input");
+    }else{
+      var files=[file];
+      navigator.share({files});
     }
-    var files=[file];
-    navigator.share({files});
-  };
-  
-  var download=function(file){
+  }
+
+  function download(file){
     // uses traditional download function in desktop browsers.
     // may not work for mobile browsers.
     // file MUST have name with file extension
     // 1st arg - required - must be file object
-    var file=fileOrBlob;
-    if(!fileOrBlob.name){
-      file=blobToFile(fileOrBlob);
+    if(!file.name){
+      console.error("download() can only take a named file as an input");
+    }else{
+      var a       = document.createElement("a");
+      a.download  = file.name;
+      a.href      = URL.createObjectURL(file);
+      a.target    = "_blank";
+      a.onclick   =()=>a.remove();
+      document.documentElement.appendChild(a);
+      a.click();
     }
-    var a       = document.createElement("a");
-    a.download  = file.name;
-    a.href      = URL.createObjectURL(file);
-    a.target    = "_blank";
-    a.onclick   =()=>a.remove();
-    document.documentElement.appendChild(a);
-    a.click();
-  };
-  
-  
+  }
+
+
   window.__save=function(fileOrBlob){
     // works on both desktop and mobile
     // uses download for desktop and share for mobile
     // uses generated filename based on timestamp
-    var file=fileOrBlob;
+    var file;
     if(!fileOrBlob.name){
-      file=blobToFile(fileOrBlob);
+      // no name so assume it is a blob, will auto-generate the name
+      file=blobToFile(fileOrBlob,null);
+    }else{
+      // first arg is already a file
+      file=fileOrBlob;
     }
     if(isIOS()||isIPadOS()){
       mobileShare(file);
@@ -129,15 +133,27 @@ self[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>{
       download(file);
     }
   };
-  
+
   window.__saveAs=function(fileOrBlob,fileName){
     // works on both desktop and mobile
     // uses download for desktop and share for mobile
     // uses generated filename based on timestamp
-    // uses user-4efined file name
-    var file=fileOrBlob;
-    if(!fileOrBlob.name){
-      file=blobToFile(fileOrBlob);
+    // uses user-defined file name
+    
+    var file;
+    
+    if(!fileName){
+      if(!fileOrBlob.name){
+        // first arg is most likely a blob
+        file=blobToFile(fileOrBlob,null);
+      }else{
+        // first arg is most likely a file
+        file=fileOrBlob;
+      }
+    }else{
+      // if second arg, use second arg as filename.
+      // if first arg is a file, it will overwrite the old name
+      file=blobToFile(fileOrBlob,fileName);
     }
     if(isIOS()||isIPadOS()){
       mobileShare(file);
@@ -147,5 +163,6 @@ self[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>{
   };
   
   
+
+
 };
-  
