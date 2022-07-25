@@ -1217,8 +1217,6 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
     }
     return res;
   }
-  
-  
   function mimeTypeToFileExtension(str){
     var res;
     var check=isVal(str);
@@ -1233,6 +1231,8 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
   
   
   
+  
+  
   function getDate(){
     var date  = new Date();
     return {
@@ -1241,7 +1241,6 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
       year  : date.getFullYear().toString().padStart(4,0)   ,
     };
   }
-
   function getTime(){
     var date  = new Date();
     return {
@@ -1251,15 +1250,11 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
       milliseconds  : date.getMilliseconds().toString().padStart(3,0) ,
     };
   }
-
   function getTimeStamp(){
     var date=getDate();
     var time=getTime();
     return date.month+date.day+date.year+"-"+time.hours+time.minutes+"-"+time.seconds+time.milliseconds;
   }
-  
- 
-  // check if we are using IOS or iPadOS
   function isIOS(){
     if(/iPad|iPhone|iPod/.test(navigator.platform)){
       return true;
@@ -1267,7 +1262,6 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
       return navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform);
     }
   }
-
   function isIPadOS(){
     return navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform);
   }
@@ -1276,29 +1270,47 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
 
 
 
-
-
-
-
-  function mobileShare(file){
-    // uses share sheet on mobile devices
-    // 1st arg - required - must be file object with name
-    if(!file.name){
-      console.error("mobileShare() can only take a named file as an input");
-    }else{
+  function makeFile(blobOrFile,newFileName){
+    var fileName=null;
+    if(blobOrFile.name){// input already has name
+      if(newFileName){// overwrite old name
+        fileName=newFileName;
+      }else{// no second argument, use old name
+        fileName=blobOrFile.name;
+      }
+    }else{// handle blob
+      if(newFileName){// write name
+        fileName=newFileName;
+      }else{// no second argument, use generated name with timestamp
+        fileName="untitled-"+getTimeStamp();
+      }
+    }
+    var hasFileExt  = fileName.match(/\.(.*?)/g);
+    if(!hasFileExt){ // automatically detect file extension based on mimetype
+      var gottenFileExtension = mimeTypeToFileExtension(blobOrFile.type);
+      fileName+="."+gottenFileExtension;
+    }
+    var outputBlob  = blobOrFile;
+    outputBlob.name = fileName;
+    outputBlob.lastModified = new Date();
+    return new File([outputBlob], outputBlob.name, {
+      type: outputBlob.type,
+    });
+  }
+  
+  window.__download=function( required_fileOrBlob , optional_writeName ){
+    // works on both desktop and mobile
+    // uses download for desktop and share for mobile
+    // uses generated filename based on timestamp
+    // uses user-defined file name
+    var file=makeFile(required_fileOrBlob,optional_writeName);
+    
+    if(isIOS()||isIPadOS()){
+      // uses share sheet on mobile devices  
       var files=[file];
       navigator.share({files});
-    }
-  }
-
-  function download(file){
-    // uses traditional download function in desktop browsers.
-    // may not work for mobile browsers.
-    // file MUST have name with file extension
-    // 1st arg - required - must be file object
-    if(!file.name){
-      console.error("download() can only take a named file as an input");
     }else{
+      // uses traditional download function in desktop browsers.
       var a       = document.createElement("a");
       a.download  = file.name;
       a.href      = URL.createObjectURL(file);
@@ -1306,56 +1318,6 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
       a.onclick   =()=>a.remove();
       document.documentElement.appendChild(a);
       a.click();
-    }
-  }
-
-  
-  function toFile(blobOrFile,fileName){
-    // if no second argument, will generate file name based on date
-    if(!fileName){
-      fileName="untitled-"+getTimeStamp();
-    }
-    var hasFileExt = fileName.match(/\.(.*?)/g);
-    if(!hasFileExt){
-      // automatically detect file extension based on mimetype
-      var gottenFileExtension = mimeTypeToFileExtension(blobOrFile.type);
-      fileName+="."+gottenFileExtension;
-    }
-    blobOrFile.name = fileName;
-    blobOrFile.lastModified = new Date();
-    return new File([blobOrFile], blobOrFile.name, {
-      type: blobOrFile.type,
-    });
-  }
-  
-
-  window.__save=function(fileOrBlob){
-    // works on both desktop and mobile
-    // uses download for desktop and share for mobile
-    // uses generated filename based on timestamp
-    var file=toFile(fileOrBlob,fileOrBlob.name||null);
-    if(isIOS()||isIPadOS()){
-      mobileShare(file);
-    }else{
-      download(file);
-    }
-  };
-
-  window.__saveAs=function(fileOrBlob,fileName){
-    // works on both desktop and mobile
-    // uses download for desktop and share for mobile
-    // uses generated filename based on timestamp
-    // uses user-defined file name
-    var file;
-    if(!fileName){
-      file=toFile(fileOrBlob,fileOrBlob.name||null);
-    }else{
-      file=toFile(fileOrBlob,fileName);
-    }
-    if(isIOS()||isIPadOS()){
-      mobileShare(file);
-    }else{
-      download(file);
     }
   };
   
