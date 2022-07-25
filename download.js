@@ -6,14 +6,10 @@
   invoke the utility like so:
 
   window["local/path/to/saveas.js"]();
-
-
-  second arg is optional, otherwise will either use filename if input is file, or generate untitled+timestamp if input is blob
-  window.__saveAs(fileOrBlob,fileName);
-
-  alternatively:
-  (if arg is file, will use file name. otherwise will auto generate one)
-  window.__save(fileOrBlob);
+  
+  to use:
+  window.__download( required_blobOrFile , optional_newFileName );
+  
 
 */
 
