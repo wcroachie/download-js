@@ -1202,7 +1202,7 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
   var isVal=(str)=>(vals.indexOf(str)===-1)?false:true;
   
   
-  function fileExtensionToMimeType(ext){
+  window.__fileExtensionToMimeType=function(ext){
     var res;
     var check=isKey(ext);
     if(!check){
@@ -1212,8 +1212,8 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
       res=LUT[ext];
     }
     return res;
-  }
-  function mimeTypeToFileExtension(str){
+  };
+  window.__mimeTypeToFileExtension=function(str){
     var res;
     var check=isVal(str);
     if(!check){
@@ -1223,7 +1223,7 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
       res=keys[vals.indexOf(str)];
     }
     return res;
-  }
+  };
   
   
   
@@ -1283,7 +1283,7 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
     }
     var hasFileExt  = fileName.match(/\.(.*?)/g);
     if(!hasFileExt){ // automatically detect file extension based on mimetype
-      var gottenFileExtension = mimeTypeToFileExtension(blobOrFile.type);
+      var gottenFileExtension = __mimeTypeToFileExtension(blobOrFile.type);
       fileName+="."+gottenFileExtension;
     }
     var outputBlob  = blobOrFile;
@@ -1304,7 +1304,11 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
     if(isIOS()||isIPadOS()){
       // uses share sheet on mobile devices  
       var files=[file];
-      navigator.share({files});
+      navigator.share({files}).then(()=>{
+        console.log("files shared");
+      }).catch((err)=>{
+        console.error("user cancelled share");
+      });
     }else{
       // uses traditional download function in desktop browsers.
       var a       = document.createElement("a");
@@ -1316,8 +1320,5 @@ window[new Error().stack.match(location.href.match(/(.*)\//g)+"(.*?):")[1]]=()=>
       a.click();
     }
   };
-  
-  
-
 
 };
